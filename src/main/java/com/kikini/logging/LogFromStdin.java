@@ -51,11 +51,14 @@ public class LogFromStdin {
 
     /** Main */
     public static void main(String[] args) {
-        if (args.length > 1) {
+        String logLevel = null;
+        if (args.length == 1) {
+            logLevel = args[0];
+        } else if (args.length > 1) {
             System.err.println("Usage: LogFromStdin logAtLevel");
             System.err.println("(logAtLevel is optional, a value of the LogAtLevel Enum)");
         }
-        new LogFromStdin().runLogger(args[0]);
+        new LogFromStdin().runLogger(logLevel);
     }
 
 }

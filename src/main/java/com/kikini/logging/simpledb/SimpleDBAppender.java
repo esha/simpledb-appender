@@ -38,8 +38,14 @@ import com.xerox.amazonws.sdb.SimpleDB;
 /**
  * Logback {@link Appender} to write log data to SimpleDB
  * <p>
- * To configure, add an appender element referring to this class in your
- * logback.xml file.
+ * To configure, add an appender element referring to this class in your {@code
+ * logback.xml} file. The following properties must be set:
+ * <ul>
+ * <li>DomainName: The name of the SimpleDB domain where the logs events are to
+ * be written
+ * <li>AccessId: Your AWS access ID
+ * <li>SecretKey: Your AWS secret key
+ * </ul>
  * 
  * @author Gabe Nell
  */
@@ -192,7 +198,18 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
 
         if (dom == null) {
             try {
-                dom = sdb.getDomain(domainName);
+                // See if the domain exists
+                List<Domain> domains = sdb.listDomains().getDomainList();
+                for (Domain domain : domains) {
+                    if (domainName.equals(domain.getName())) {
+                        dom = domain;
+                        break;
+                    }
+                }
+                // Didn't find it, so create it
+                if (null == dom) {
+                    dom = sdb.createDomain(domainName);
+                }
             } catch (SDBException e) {
                 addStatus(new ErrorStatus("Could not get domain for SimpleDBAppender", this, e));
                 return;
