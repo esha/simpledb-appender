@@ -57,6 +57,7 @@ public class LogFromStdin {
         } else if (args.length > 1) {
             System.err.println("Usage: LogFromStdin logAtLevel");
             System.err.println("(logAtLevel is optional, a value of the LogAtLevel Enum)");
+            return;
         }
         new LogFromStdin().runLogger(logLevel);
     }
