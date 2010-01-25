@@ -45,15 +45,14 @@ public class LineLogger implements Runnable {
     /**
      * Representation of SLF4J logging levels
      */
-    // TODO: add more levels
     public enum LogAtLevel {
 
-        /** Info level */
-        INFO {
+        /** Debug level */
+        DEBUG {
 
             @Override
             public void log(String msg) {
-                LOGGER.info(msg);
+                LOGGER.debug(msg);
             }
 
         },
@@ -65,6 +64,36 @@ public class LineLogger implements Runnable {
             public void log(String msg) {
                 LOGGER.error(msg);
             }
+        },
+
+        /** Info level */
+        INFO {
+
+            @Override
+            public void log(String msg) {
+                LOGGER.info(msg);
+            }
+
+        },
+
+        /** Trace level */
+        TRACE {
+
+            @Override
+            public void log(String msg) {
+                LOGGER.trace(msg);
+            }
+
+        },
+
+        /** Warn level */
+        WARN {
+
+            @Override
+            public void log(String msg) {
+                LOGGER.warn(msg);
+            }
+
         };
 
         /**

@@ -27,13 +27,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
-import org.joda.time.chrono.ISOChronology;
-import org.joda.time.format.DateTimeParser;
-import org.joda.time.format.DateTimeParserBucket;
-import org.joda.time.format.ISODateTimeFormat;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -60,11 +57,10 @@ public class SimpleDBWriterTest {
      */
     @Before
     public void setUp() {
-        // The three times correspond to 2001-09-08T18:46:40.000-07:00,
-        // 2009-09-04T15:00:00.000-07:00, and 2009-11-04T15:00:00.000-08:00
-        SimpleDBRow row1 = new SimpleDBRow("test msg 1", "i-001", "com.kikini.test", "level", 1000000000000L, 1);
-        SimpleDBRow row2 = new SimpleDBRow("test msg 2", "i-001", "com.kikini.test", "level", 1252101600000L, 1);
-        SimpleDBRow row3 = new SimpleDBRow("test msg 3", "i-001", "com.kikini.test", "level", 1257375600000L, 1);
+        DateTime now = new DateTime(2010, 2, 1, 12, 0, 0, 0, DateTimeZone.UTC);
+        SimpleDBRow row1 = new SimpleDBRow("test msg 1", "i-001", "com.kikini.test", "level", now.getMillis(), 1);
+        SimpleDBRow row2 = new SimpleDBRow("test msg 2", "i-001", "com.kikini.test", "level", now.plusMinutes(1).getMillis(), 1);
+        SimpleDBRow row3 = new SimpleDBRow("test msg 3", "i-001", "com.kikini.test", "level", now.plusMinutes(2).getMillis(), 1);
         rows = Arrays.asList(row1, row2, row3);
         dom = mock(Domain.class);
         writer = new SimpleDBWriter(dom);
@@ -108,56 +104,6 @@ public class SimpleDBWriterTest {
     public void emptyArgumentTest() {
         writer.writeRows(new ArrayList<SimpleDBRow>());
         verifyZeroInteractions(dom);
-    }
-
-    private void verifyTimeWithOffset(Collection<List<ItemAttribute>> vals, int offset) {
-        boolean checked = false; // make sure we actually checked
-        DateTimeParser parser = ISODateTimeFormat.dateTimeParser().getParser();
-        for (List<ItemAttribute> val : vals) {
-            for (ItemAttribute att : val) {
-                if (att.getName().equals("time")) {
-                    DateTimeParserBucket bucket = new DateTimeParserBucket(0, ISOChronology.getInstance(), Locale.US);
-                    parser.parseInto(bucket, att.getValue(), 0);
-                    assertTrue(bucket.getOffset() == offset);
-                    checked = true;
-                }
-            }
-        }
-        assertTrue(checked);
-    }
-
-    /**
-     * Verifies the offset is correct for pacific time when daylight savings is
-     * in effect
-     * 
-     * @throws SDBException
-     */
-    @Test
-    @SuppressWarnings("unchecked")
-    public void timezonePDTTest() throws SDBException {
-        // rows[1] should be in DST
-        writer.writeRows(Collections.singletonList(rows.get(1)));
-        verify(dom).batchPutAttributes(argument.capture());
-        Collection<List<ItemAttribute>> vals = argument.getValue().values();
-        // -7h = -25200000
-        verifyTimeWithOffset(vals, -25200000);
-    }
-
-    /**
-     * Verifies the offset is correct for pacific time when daylight savings is
-     * not in effect
-     * 
-     * @throws SDBException
-     */
-    @Test
-    @SuppressWarnings("unchecked")
-    public void timezonePSTTest() throws SDBException {
-        // rows[2] should be in Standard time
-        writer.writeRows(Collections.singletonList(rows.get(2)));
-        verify(dom).batchPutAttributes(argument.capture());
-        Collection<List<ItemAttribute>> vals = argument.getValue().values();
-        // -8h = -28800000
-        verifyTimeWithOffset(vals, -28800000);
     }
 
     /**

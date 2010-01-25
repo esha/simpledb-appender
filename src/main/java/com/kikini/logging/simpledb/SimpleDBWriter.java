@@ -48,16 +48,13 @@ class SimpleDBWriter {
     private static final int MAX_ATTR_SIZE_BYTES = 1024;
     private static final int MAX_BATCH_PUT = 25;
 
-    // TODO: make the instance column more generic
-    private static final String INSTANCE_COLUMN = "instance";
+    private static final String HOST_COLUMN = "host";
     private static final String COMPONENT_COLUMN = "component";
     private static final String TIME_COLUMN = "time";
     private static final String MESSAGE_COLUMN = "msg";
     private static final String LEVEL_COLUMN = "level";
 
-    // TODO: make the timezone configurable
-    private static final DateTimeFormatter TIME_FORMAT = ISODateTimeFormat.dateTime().withZone(
-            DateTimeZone.forID("America/Los_Angeles"));
+    private DateTimeFormatter timeFormatter = ISODateTimeFormat.dateTime();
     private final Domain dom;
 
     SimpleDBWriter(Domain dom) {
@@ -65,7 +62,17 @@ class SimpleDBWriter {
     }
 
     private String formatTime(long time) {
-        return TIME_FORMAT.print(new DateTime(time));
+        return timeFormatter.print(new DateTime(time));
+    }
+
+    /**
+     * Set the time zone to use when writing the time column. The default is the
+     * system time zone.
+     * 
+     * @param timeZone
+     */
+    public void setTimeZone(DateTimeZone timeZone) {
+        timeFormatter = ISODateTimeFormat.dateTime().withZone(timeZone);
     }
 
     /**
@@ -118,7 +125,7 @@ class SimpleDBWriter {
 
             for (SimpleDBRow row : nextBatch) {
                 List<ItemAttribute> atts = new ArrayList<ItemAttribute>();
-                addIfNotNull(atts, INSTANCE_COLUMN, row.getInstanceId());
+                addIfNotNull(atts, HOST_COLUMN, row.getHost());
                 addIfNotNull(atts, MESSAGE_COLUMN, row.getMsg());
                 addIfNotNull(atts, LEVEL_COLUMN, row.getLevel());
                 addIfNotNull(atts, COMPONENT_COLUMN, row.getComponent());

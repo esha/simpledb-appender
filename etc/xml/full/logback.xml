@@ -3,6 +3,10 @@
     <domainName>your_simpledb_domain</domainName>
     <accessId>your_aws_access_id</accessId>
     <secretKey>your_aws_secret_key</secretKey>
+    <timeZone>UTC</timeZone>
+    <loggingPeriodMillis>5000</loggingPeriodMillis>
+    <host>localhost</host>
+    <componentName>my_component</componentName>
   </appender>
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <layout class="ch.qos.logback.classic.PatternLayout">

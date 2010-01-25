@@ -25,6 +25,8 @@ import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.DelayQueue;
 
+import org.joda.time.DateTimeZone;
+
 import ch.qos.logback.classic.spi.CallerData;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.Appender;
@@ -59,8 +61,9 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
 
     // optional properties
     private String componentName = null;
-    private String instanceId = null;
+    private String host = null;
     private long loggingPeriodMillis = 10000;
+    private String timeZone = null;
 
     // required properties
     private String domainName;
@@ -72,9 +75,10 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
      * containing any of the following keys:
      * <ul>
      * <li>domainName
-     * <li>instanceId
+     * <li>host
      * <li>accessId
      * <li>secretKey
+     * <li>timeZone
      * </ul>
      * 
      * @param filename
@@ -91,14 +95,16 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
         Properties props = new Properties();
         props.load(propStream);
         String domainName = props.getProperty("domainName");
-        String instanceId = props.getProperty("instanceId");
+        String host = props.getProperty("host");
         String accessId = props.getProperty("accessId");
         String secretKey = props.getProperty("secretKey");
+        String timeZone = props.getProperty("timeZone");
 
         if (null != domainName) setDomainName(domainName);
-        if (null != instanceId) setInstanceId(instanceId);
+        if (null != host) setHost(host);
         if (null != accessId) setAccessId(accessId);
         if (null != secretKey) setSecretKey(secretKey);
+        if (null != timeZone) setTimeZone(timeZone);
     }
 
     /**
@@ -112,14 +118,21 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
     }
 
     /**
-     * @param instanceId
-     *        the instanceId to set
+     * Set the name of the host. This could be any string, such as an IP
+     * address, DNS name, friendly name, cloud instance-id, etc. The purpose is
+     * to uniquely identify a machine. If not specified, the host column is not
+     * written.
+     * 
+     * @param host
+     *        the host name to set
      */
-    public void setInstanceId(String instanceId) {
-        this.instanceId = instanceId;
+    public void setHost(String host) {
+        this.host = host;
     }
 
     /**
+     * Sets the SimpleDB domain to use
+     * 
      * @param domainName
      *        the domainName to set
      */
@@ -133,6 +146,20 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
      */
     public void setLoggingPeriodMillis(long loggingPeriodMillis) {
         this.loggingPeriodMillis = loggingPeriodMillis;
+    }
+
+    /**
+     * Set the time zone to use when writing the time column to SimpleDB. The
+     * time zone should be specified in the long format. See
+     * {@link DateTimeZone#forID(String)} for the expected format. The time will
+     * be written in ISO 8601 format. If not set, the system time zone will be
+     * used.
+     * 
+     * @param timeZone
+     *        the time zone to set
+     */
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
     }
 
     /**
@@ -161,7 +188,7 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
         this.consumer = consumer;
         this.writer = writer;
         this.queue = queue;
-        this.instanceId = instanceId;
+        this.host = instanceId;
     }
 
     /**
@@ -224,6 +251,10 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
             this.writer = new SimpleDBWriter(dom);
         }
 
+        if (timeZone != null) {
+            writer.setTimeZone(DateTimeZone.forID(timeZone));
+        }
+
         if (consumer == null) {
             consumer = new SimpleDBConsumer(queue, writer);
         }
@@ -237,7 +268,7 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
     }
 
     private void queueForProcessing(String msg, String component, String level, long time) {
-        SimpleDBRow row = new SimpleDBRow(msg, instanceId, component, level, time, loggingPeriodMillis);
+        SimpleDBRow row = new SimpleDBRow(msg, host, component, level, time, loggingPeriodMillis);
         queue.add(row);
     }
 

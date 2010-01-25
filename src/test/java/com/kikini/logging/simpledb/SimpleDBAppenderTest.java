@@ -141,7 +141,7 @@ public class SimpleDBAppenderTest {
         appender.append(event);
         verify(queue).add(argument.capture());
         SimpleDBRow row = argument.getValue();
-        assertTrue(row.getInstanceId().equals(instanceId));
+        assertTrue(row.getHost().equals(instanceId));
     }
 
 }
