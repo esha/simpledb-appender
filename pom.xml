@@ -4,7 +4,7 @@
 
     <groupId>com.esha</groupId>
     <artifactId>simpledb-appender</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.1</version>
     <packaging>jar</packaging>
     <name>Logback SimpleDB Appender</name>
     <url>https://github.com/esha/simpledb-appender</url>
