@@ -33,13 +33,15 @@ class SimpleDBRow implements Delayed {
     private String msg;
     private String host;
     private String context;
+    private String logger;
     private String level;
     private long time;
 
-    SimpleDBRow(String msg, String host, String context, String level, long time, long granularity) {
+    SimpleDBRow(String msg, String host, String context, String logger, String level, long time, long granularity) {
         this.msg = msg;
         this.host = host;
         this.context = context;
+        this.logger = logger;
         this.level = level;
         this.time = time;
         this.delayed = new GranularDelay(granularity);
@@ -55,6 +57,10 @@ class SimpleDBRow implements Delayed {
 
     public String getContext() {
         return context;
+    }
+
+    public String getLogger() {
+        return logger;
     }
 
     public String getLevel() {

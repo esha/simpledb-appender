@@ -50,6 +50,7 @@ public class SimpleDBAppenderTest {
     String instanceId;
     SimpleDBAppender appender;
     LoggingEvent event;
+    String loggerName;
     Level level;
     ArgumentCaptor<SimpleDBRow> argument;
 
@@ -67,8 +68,10 @@ public class SimpleDBAppenderTest {
         instanceId = "i-001";
         appender = new SimpleDBAppender(sdb, dom, consumer, writer, queue, instanceId);
         event = mock(LoggingEvent.class);
+        loggerName = "logger";
         level = Level.toLevel(Level.INFO_INT);
         argument = ArgumentCaptor.forClass(SimpleDBRow.class);
+        when(event.getLoggerName()).thenReturn(loggerName);
         when(event.getLevel()).thenReturn(level);
         when(event.getFormattedMessage()).thenReturn("this is a log message");
         when(event.getTimeStamp()).thenReturn(1500000000000L);
@@ -82,6 +85,17 @@ public class SimpleDBAppenderTest {
         appender.append(event);
         verify(queue).add(isA(SimpleDBRow.class));
         verifyNoMoreInteractions(queue);
+    }
+
+    /**
+     * Test that the logger was set correctly
+     */
+    @Test
+    public void rowLoggerSet() {
+        appender.append(event);
+        verify(queue).add(argument.capture());
+        SimpleDBRow row = argument.getValue();
+        assertTrue(row.getLogger().equals(loggerName));
     }
 
     /**

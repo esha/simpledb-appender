@@ -53,7 +53,7 @@ public class SimpleDBConsumerTest {
      */
     @Test
     public void runTakesThenDrains() throws InterruptedException {
-        SimpleDBRow row1 = new SimpleDBRow("test msg 1", "i-001", "com.kikini.test", "level", 1000000000000L, 1);
+        SimpleDBRow row1 = new SimpleDBRow("test msg 1", "i-001", "com.kikini.test", "logger", "level", 1000000000000L, 1);
         when(queue.take()).thenReturn(row1).thenThrow(new InterruptedException());
         InOrder inOrder = inOrder(queue, writer);
         consumer.run();

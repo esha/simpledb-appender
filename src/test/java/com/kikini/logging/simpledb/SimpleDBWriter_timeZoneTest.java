@@ -45,7 +45,7 @@ public class SimpleDBWriter_timeZoneTest {
     @SuppressWarnings("unchecked")
     private ArgumentCaptor<Map> argument = ArgumentCaptor.forClass(Map.class);
     private DateTime now = new DateTime(2010, 2, 1, 12, 0, 0, 0, DateTimeZone.UTC);
-    private SimpleDBRow row = new SimpleDBRow("test", null, null, "level", now.getMillis(), 1);
+    private SimpleDBRow row = new SimpleDBRow("test", null, null, "logger", "level", now.getMillis(), 1);
 
     @Before
     public void setUp() {

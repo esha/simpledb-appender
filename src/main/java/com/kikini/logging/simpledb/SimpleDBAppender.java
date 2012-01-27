@@ -264,13 +264,13 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
         super.start();
     }
 
-    private void queueForProcessing(String msg, String context, String level, long time) {
-        SimpleDBRow row = new SimpleDBRow(msg, host, context, level, time, loggingPeriodMillis);
+    private void queueForProcessing(String msg, String context, String logger, String level, long time) {
+        SimpleDBRow row = new SimpleDBRow(msg, host, context, logger, level, time, loggingPeriodMillis);
         queue.add(row);
     }
 
     @Override
     public void append(LoggingEvent event) {
-        queueForProcessing(event.getFormattedMessage(), contextName, event.getLevel().toString(), event.getTimeStamp());
+        queueForProcessing(event.getFormattedMessage(), contextName, event.getLoggerName(), event.getLevel().toString(), event.getTimeStamp());
     }
 }
