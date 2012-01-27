@@ -20,6 +20,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.DelayQueue;
@@ -30,6 +31,8 @@ import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.status.ErrorStatus;
+
+import com.google.common.collect.ImmutableMap;
 
 import com.xerox.amazonws.sdb.Domain;
 import com.xerox.amazonws.sdb.SDBException;
@@ -264,13 +267,14 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
         super.start();
     }
 
-    private void queueForProcessing(String msg, String context, String logger, String level, long time) {
-        SimpleDBRow row = new SimpleDBRow(msg, host, context, logger, level, time, loggingPeriodMillis);
+    private void queueForProcessing(String msg, String context, String logger, String level, long time, Map<String, String> mdcPropertyMap) {
+        SimpleDBRow row = new SimpleDBRow(msg, host, context, logger, level, time, loggingPeriodMillis, mdcPropertyMap);
         queue.add(row);
     }
 
     @Override
     public void append(LoggingEvent event) {
-        queueForProcessing(event.getFormattedMessage(), contextName, event.getLoggerName(), event.getLevel().toString(), event.getTimeStamp());
+        Map<String, String> mdcPropertyMap = ImmutableMap.copyOf(event.getMDCPropertyMap());
+        queueForProcessing(event.getFormattedMessage(), contextName, event.getLoggerName(), event.getLevel().toString(), event.getTimeStamp(), mdcPropertyMap);
     }
 }

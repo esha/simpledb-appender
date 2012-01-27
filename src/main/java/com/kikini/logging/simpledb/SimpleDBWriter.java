@@ -54,6 +54,7 @@ class SimpleDBWriter {
     private static final String MESSAGE_COLUMN = "msg";
     private static final String LEVEL_COLUMN = "level";
     private static final String LOGGER_COLUMN = "logger";
+    private static final String MDC_COLUMN_PREFIX = "mdc.";
 
     private DateTimeFormatter timeFormatter = ISODateTimeFormat.dateTime();
     private final Domain dom;
@@ -132,6 +133,11 @@ class SimpleDBWriter {
                 addIfNotNull(atts, LOGGER_COLUMN, row.getLogger());
                 addIfNotNull(atts, CONTEXT_COLUMN, row.getContext());
                 addIfNotNull(atts, TIME_COLUMN, formatTime(row.getTime()));
+
+                for (Map.Entry<String, String> mdcProperty : row.getMDCPropertyMap().entrySet()) {
+                    String mdcColumnName = MDC_COLUMN_PREFIX + mdcProperty.getKey();
+                    addIfNotNull(atts, mdcColumnName, mdcProperty.getValue());
+                }
 
                 // SimpleDB will not generate a key for you, so we use a random
                 // UUID as the key for this entry

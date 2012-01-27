@@ -35,6 +35,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.google.common.collect.ImmutableMap;
+
 import com.xerox.amazonws.sdb.Domain;
 import com.xerox.amazonws.sdb.ItemAttribute;
 import com.xerox.amazonws.sdb.SDBException;
@@ -58,9 +60,9 @@ public class SimpleDBWriterTest {
     @Before
     public void setUp() {
         DateTime now = new DateTime(2010, 2, 1, 12, 0, 0, 0, DateTimeZone.UTC);
-        SimpleDBRow row1 = new SimpleDBRow("test msg 1", "i-001", "com.kikini.test", "logger", "level", now.getMillis(), 1);
-        SimpleDBRow row2 = new SimpleDBRow("test msg 2", "i-001", "com.kikini.test", "logger", "level", now.plusMinutes(1).getMillis(), 1);
-        SimpleDBRow row3 = new SimpleDBRow("test msg 3", "i-001", "com.kikini.test", "logger", "level", now.plusMinutes(2).getMillis(), 1);
+        SimpleDBRow row1 = new SimpleDBRow("test msg 1", "i-001", "com.kikini.test", "logger", "level", now.getMillis(), 1, ImmutableMap.of("key", "value"));
+        SimpleDBRow row2 = new SimpleDBRow("test msg 2", "i-001", "com.kikini.test", "logger", "level", now.plusMinutes(1).getMillis(), 1, ImmutableMap.of("key", "value"));
+        SimpleDBRow row3 = new SimpleDBRow("test msg 3", "i-001", "com.kikini.test", "logger", "level", now.plusMinutes(2).getMillis(), 1, ImmutableMap.of("key", "value"));
         rows = Arrays.asList(row1, row2, row3);
         dom = mock(Domain.class);
         writer = new SimpleDBWriter(dom);
@@ -93,7 +95,7 @@ public class SimpleDBWriterTest {
         verify(dom).batchPutAttributes(argument.capture());
         Collection<List<ItemAttribute>> vals = argument.getValue().values();
         for (List<ItemAttribute> val : vals) {
-            assertTrue(val.size() == 6);
+            assertTrue(val.size() == 7);
         }
     }
 
@@ -122,7 +124,7 @@ public class SimpleDBWriterTest {
             // be 3000 bytes
             longMsg = longMsg + '花';
         }
-        SimpleDBRow row1 = new SimpleDBRow(longMsg, "i-001", "com.kikini.test", "logger", "level", 1000000000000L, 1);
+        SimpleDBRow row1 = new SimpleDBRow(longMsg, "i-001", "com.kikini.test", "logger", "level", 1000000000000L, 1, ImmutableMap.of("key", "value"));
         writer.writeRows(Collections.singletonList(row1));
         verify(dom).batchPutAttributes(argument.capture());
         Collection<List<ItemAttribute>> vals = argument.getValue().values();
@@ -146,7 +148,7 @@ public class SimpleDBWriterTest {
     public void putsAreBatchedTest() throws SDBException {
         List<SimpleDBRow> tooManyRows = new ArrayList<SimpleDBRow>();
         for (int i = 0; i < 30; i++) {
-            tooManyRows.add(new SimpleDBRow("test msg " + i, "i-001", "com.kikini.test", "logger", "level", 1000000000000L, 1));
+            tooManyRows.add(new SimpleDBRow("test msg " + i, "i-001", "com.kikini.test", "logger", "level", 1000000000000L, 1,  ImmutableMap.of("key", "value")));
         }
         writer.writeRows(tooManyRows);
         verify(dom, times(2)).batchPutAttributes(argument.capture());

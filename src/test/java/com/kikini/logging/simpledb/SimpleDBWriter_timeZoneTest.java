@@ -30,6 +30,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.google.common.collect.ImmutableMap;
+
 import com.xerox.amazonws.sdb.Domain;
 import com.xerox.amazonws.sdb.ItemAttribute;
 
@@ -45,7 +47,7 @@ public class SimpleDBWriter_timeZoneTest {
     @SuppressWarnings("unchecked")
     private ArgumentCaptor<Map> argument = ArgumentCaptor.forClass(Map.class);
     private DateTime now = new DateTime(2010, 2, 1, 12, 0, 0, 0, DateTimeZone.UTC);
-    private SimpleDBRow row = new SimpleDBRow("test", null, null, "logger", "level", now.getMillis(), 1);
+    private SimpleDBRow row = new SimpleDBRow("test", null, null, "logger", "level", now.getMillis(), 1,  ImmutableMap.of("key", "value"));
 
     @Before
     public void setUp() {

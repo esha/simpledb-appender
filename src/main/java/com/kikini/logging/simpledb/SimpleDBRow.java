@@ -15,9 +15,12 @@
  */
 package com.kikini.logging.simpledb;
 
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Data representation of a row to be written to SimpleDB. Implements
@@ -36,8 +39,9 @@ class SimpleDBRow implements Delayed {
     private String logger;
     private String level;
     private long time;
+    private Map<String, String> mdcPropertyMap;
 
-    SimpleDBRow(String msg, String host, String context, String logger, String level, long time, long granularity) {
+    SimpleDBRow(String msg, String host, String context, String logger, String level, long time, long granularity, Map<String, String> mdcPropertyMap) {
         this.msg = msg;
         this.host = host;
         this.context = context;
@@ -45,6 +49,7 @@ class SimpleDBRow implements Delayed {
         this.level = level;
         this.time = time;
         this.delayed = new GranularDelay(granularity);
+        this.mdcPropertyMap = ImmutableMap.copyOf(mdcPropertyMap);
     }
 
     public String getMsg() {
@@ -79,5 +84,9 @@ class SimpleDBRow implements Delayed {
     @Override
     public int compareTo(Delayed o) {
         return delayed.compareTo(o);
+    }
+
+    public Map<String, String> getMDCPropertyMap() {
+        return mdcPropertyMap;
     }
 }

@@ -32,6 +32,8 @@ import org.mockito.ArgumentCaptor;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.LoggingEvent;
 
+import com.google.common.collect.ImmutableMap;
+
 import com.xerox.amazonws.sdb.Domain;
 import com.xerox.amazonws.sdb.SimpleDB;
 
@@ -75,6 +77,7 @@ public class SimpleDBAppenderTest {
         when(event.getLevel()).thenReturn(level);
         when(event.getFormattedMessage()).thenReturn("this is a log message");
         when(event.getTimeStamp()).thenReturn(1500000000000L);
+        when(event.getMDCPropertyMap()).thenReturn(ImmutableMap.of("key", "value"));
     }
 
     /**
@@ -153,6 +156,17 @@ public class SimpleDBAppenderTest {
         verify(queue).add(argument.capture());
         SimpleDBRow row = argument.getValue();
         assertTrue(row.getHost().equals(instanceId));
+    }
+
+    /**
+     * Test that the MDC property map was set correctly
+     */
+    @Test
+    public void rowMdcPropertyMapSet() {
+        appender.append(event);
+        verify(queue).add(argument.capture());
+        SimpleDBRow row = argument.getValue();
+        assertTrue(row.getMDCPropertyMap().containsKey("key"));
     }
 
 }
