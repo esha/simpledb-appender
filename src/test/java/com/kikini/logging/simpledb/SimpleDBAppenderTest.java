@@ -34,8 +34,7 @@ import ch.qos.logback.classic.spi.LoggingEvent;
 
 import com.google.common.collect.ImmutableMap;
 
-import com.xerox.amazonws.sdb.Domain;
-import com.xerox.amazonws.sdb.SimpleDB;
+import com.amazonaws.services.simpledb.AmazonSimpleDB;
 
 /**
  * Tests for the {@link SimpleDBAppender} class
@@ -44,8 +43,8 @@ import com.xerox.amazonws.sdb.SimpleDB;
  */
 public class SimpleDBAppenderTest {
 
-    SimpleDB sdb;
-    Domain dom;
+    AmazonSimpleDB sdb;
+    String dom;
     SimpleDBConsumer consumer;
     SimpleDBWriter writer;
     BlockingQueue<SimpleDBRow> queue;
@@ -62,8 +61,8 @@ public class SimpleDBAppenderTest {
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
-        sdb = mock(SimpleDB.class);
-        dom = mock(Domain.class);
+        sdb = mock(AmazonSimpleDB.class);
+        dom = "test";
         consumer = mock(SimpleDBConsumer.class);
         writer = mock(SimpleDBWriter.class);
         queue = mock(BlockingQueue.class);

@@ -32,11 +32,15 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.status.ErrorStatus;
 
-import com.google.common.collect.ImmutableMap;
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.simpledb.AmazonSimpleDB;
+import com.amazonaws.services.simpledb.AmazonSimpleDBClient;
+import com.amazonaws.services.simpledb.model.CreateDomainRequest;
+import com.amazonaws.services.simpledb.model.ListDomainsResult;
 
-import com.xerox.amazonws.sdb.Domain;
-import com.xerox.amazonws.sdb.SDBException;
-import com.xerox.amazonws.sdb.SimpleDB;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Logback {@link Appender} to write log data to SimpleDB
@@ -54,8 +58,8 @@ import com.xerox.amazonws.sdb.SimpleDB;
  */
 public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
 
-    private SimpleDB sdb = null;
-    private Domain dom = null;
+    private AmazonSimpleDB sdb = null;
+    private String dom = null;
     private SimpleDBConsumer consumer = null;
     private SimpleDBWriter writer = null;
     private BlockingQueue<SimpleDBRow> queue = null;
@@ -95,13 +99,13 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
     void setCommonProperties(InputStream propStream) throws IOException {
         Properties props = new Properties();
         props.load(propStream);
-        String domainName = props.getProperty("domainName");
+        String dom = props.getProperty("domainName");
         String host = props.getProperty("host");
         String accessId = props.getProperty("accessId");
         String secretKey = props.getProperty("secretKey");
         String timeZone = props.getProperty("timeZone");
 
-        if (null != domainName) setDomainName(domainName);
+        if (null != dom) setDomainName(dom);
         if (null != host) setHost(host);
         if (null != accessId) setAccessId(accessId);
         if (null != secretKey) setSecretKey(secretKey);
@@ -181,7 +185,7 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
     /**
      * Dependency-Injection constructor
      */
-    public SimpleDBAppender(SimpleDB sdb, Domain dom, SimpleDBConsumer consumer, SimpleDBWriter writer,
+    public SimpleDBAppender(AmazonSimpleDB sdb, String dom, SimpleDBConsumer consumer, SimpleDBWriter writer,
             BlockingQueue<SimpleDBRow> queue, String instanceId) {
         this.sdb = sdb;
         this.dom = dom;
@@ -220,25 +224,26 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
         if (!requiredPropsSet) return;
 
         if (sdb == null) {
-            sdb = new SimpleDB(accessId, secretKey, true);
-        }
-
-        if (dom == null) {
             try {
+                final AWSCredentials credentials =
+                    new BasicAWSCredentials(accessId, secretKey);
+                sdb = new AmazonSimpleDBClient(credentials);
+
                 // See if the domain exists
-                List<Domain> domains = sdb.listDomains().getDomainList();
-                for (Domain domain : domains) {
-                    if (domainName.equals(domain.getName())) {
-                        dom = domain;
+                boolean found = false;
+                ListDomainsResult result = sdb.listDomains();
+                for (String domainName : result.getDomainNames()) {
+                    if (dom.equals(domainName)) {
+                        found = true;
                         break;
                     }
                 }
                 // Didn't find it, so create it
-                if (null == dom) {
-                    dom = sdb.createDomain(domainName);
+                if (!found) {
+                    sdb.createDomain(new CreateDomainRequest(dom));
                 }
-            } catch (SDBException e) {
-                addStatus(new ErrorStatus("Could not get domain for SimpleDBAppender", this, e));
+            } catch (AmazonClientException e) {
+                addStatus(new ErrorStatus("Could not get access SimpleDB", this, e));
                 return;
             }
         }
@@ -248,7 +253,7 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
         }
 
         if (writer == null) {
-            this.writer = new SimpleDBWriter(dom);
+            this.writer = new SimpleDBWriter(sdb, dom);
         }
 
         if (timeZone != null) {

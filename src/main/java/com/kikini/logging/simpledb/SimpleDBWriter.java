@@ -17,7 +17,6 @@ package com.kikini.logging.simpledb;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,9 +26,10 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
-import com.xerox.amazonws.sdb.Domain;
-import com.xerox.amazonws.sdb.ItemAttribute;
-import com.xerox.amazonws.sdb.SDBException;
+import com.amazonaws.services.simpledb.AmazonSimpleDB;
+import com.amazonaws.services.simpledb.model.BatchPutAttributesRequest;
+import com.amazonaws.services.simpledb.model.ReplaceableAttribute;
+import com.amazonaws.services.simpledb.model.ReplaceableItem;
 
 /**
  * Class to write the data represented in {@link SimpleDBRow} into SimpleDB.
@@ -57,9 +57,11 @@ class SimpleDBWriter {
     private static final String MDC_COLUMN_PREFIX = "mdc.";
 
     private DateTimeFormatter timeFormatter = ISODateTimeFormat.dateTime();
-    private final Domain dom;
+    private final AmazonSimpleDB sdb;
+    private final String dom;
 
-    SimpleDBWriter(Domain dom) {
+    SimpleDBWriter(AmazonSimpleDB sdb, String dom) {
+        this.sdb = sdb;
         this.dom = dom;
     }
 
@@ -105,9 +107,9 @@ class SimpleDBWriter {
         return string;
     }
 
-    private void addIfNotNull(List<ItemAttribute> atts, String key, String val) {
+    private void addIfNotNull(List<ReplaceableAttribute> atts, String key, String val) {
         if (val != null) {
-            atts.add(new ItemAttribute(key, truncateToSize(val), false));
+            atts.add(new ReplaceableAttribute(key, truncateToSize(val), false));
         }
     }
 
@@ -123,10 +125,10 @@ class SimpleDBWriter {
         ListBatcher<SimpleDBRow> batchedList = new ListBatcher<SimpleDBRow>(rows, MAX_BATCH_PUT);
 
         while ((nextBatch = batchedList.nextBatch()) != null) {
-            Map<String, List<ItemAttribute>> hash = new Hashtable<String, List<ItemAttribute>>();
+            List<ReplaceableItem> items = new ArrayList<ReplaceableItem>();
 
             for (SimpleDBRow row : nextBatch) {
-                List<ItemAttribute> atts = new ArrayList<ItemAttribute>();
+                List<ReplaceableAttribute> atts = new ArrayList<ReplaceableAttribute>();
                 addIfNotNull(atts, HOST_COLUMN, row.getHost());
                 addIfNotNull(atts, MESSAGE_COLUMN, row.getMsg());
                 addIfNotNull(atts, LEVEL_COLUMN, row.getLevel());
@@ -141,13 +143,10 @@ class SimpleDBWriter {
 
                 // SimpleDB will not generate a key for you, so we use a random
                 // UUID as the key for this entry
-                hash.put(UUID.randomUUID().toString(), atts);
+                items.add(new ReplaceableItem(UUID.randomUUID().toString(), atts));
             }
 
-            try {
-                dom.batchPutAttributes(hash);
-            } catch (SDBException e) {
-            }
+            sdb.batchPutAttributes(new BatchPutAttributesRequest(dom, items));
         }
     }
 }

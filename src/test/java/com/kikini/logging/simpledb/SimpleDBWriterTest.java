@@ -35,11 +35,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.google.common.collect.ImmutableMap;
+import com.amazonaws.services.simpledb.AmazonSimpleDB;
+import com.amazonaws.services.simpledb.model.BatchPutAttributesRequest;
+import com.amazonaws.services.simpledb.model.ReplaceableAttribute;
+import com.amazonaws.services.simpledb.model.ReplaceableItem;
 
-import com.xerox.amazonws.sdb.Domain;
-import com.xerox.amazonws.sdb.ItemAttribute;
-import com.xerox.amazonws.sdb.SDBException;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Tests for the {@link SimpleDBWriter} class
@@ -48,11 +49,12 @@ import com.xerox.amazonws.sdb.SDBException;
  */
 public class SimpleDBWriterTest {
 
-    private Domain dom;
+    private AmazonSimpleDB sdb;    
+    private String dom;
     private SimpleDBWriter writer;
     private List<SimpleDBRow> rows;
     @SuppressWarnings("unchecked")
-    ArgumentCaptor<Map> argument;
+    ArgumentCaptor<BatchPutAttributesRequest> argument;
 
     /**
      * Creates three rows and sets up a mock Domain and argument capture
@@ -64,38 +66,36 @@ public class SimpleDBWriterTest {
         SimpleDBRow row2 = new SimpleDBRow("test msg 2", "i-001", "com.kikini.test", "logger", "level", now.plusMinutes(1).getMillis(), 1, ImmutableMap.of("key", "value"));
         SimpleDBRow row3 = new SimpleDBRow("test msg 3", "i-001", "com.kikini.test", "logger", "level", now.plusMinutes(2).getMillis(), 1, ImmutableMap.of("key", "value"));
         rows = Arrays.asList(row1, row2, row3);
-        dom = mock(Domain.class);
-        writer = new SimpleDBWriter(dom);
-        argument = ArgumentCaptor.forClass(Map.class);
+        sdb = mock(AmazonSimpleDB.class);
+        dom = "test";
+        writer = new SimpleDBWriter(sdb, dom);
+        argument = ArgumentCaptor.forClass(BatchPutAttributesRequest.class);
     }
 
     /**
      * Checks that the right number of rows were written
-     * 
-     * @throws SDBException
      */
     @SuppressWarnings("unchecked")
     @Test
-    public void writerResultSizeTest() throws SDBException {
+    public void writerResultSizeTest() {
         writer.writeRows(rows);
-        verify(dom).batchPutAttributes(argument.capture());
-        Map<String, List<ItemAttribute>> map = argument.getValue();
-        assertTrue(map.size() == 3);
+        verify(sdb).batchPutAttributes(argument.capture());
+        List<ReplaceableItem> items = argument.getValue().getItems();
+        assertTrue(items.size() == 3);
     }
 
     /**
      * Checks that each row has the right number of columns
-     * 
-     * @throws SDBException
      */
     @SuppressWarnings("unchecked")
     @Test
-    public void writerResultElementSizesTest() throws SDBException {
+    public void writerResultElementSizesTest() {
         writer.writeRows(rows);
-        verify(dom).batchPutAttributes(argument.capture());
-        Collection<List<ItemAttribute>> vals = argument.getValue().values();
-        for (List<ItemAttribute> val : vals) {
-            assertTrue(val.size() == 7);
+        verify(sdb).batchPutAttributes(argument.capture());
+        List<ReplaceableItem> items = argument.getValue().getItems();
+        for (ReplaceableItem item : items) {
+            List<ReplaceableAttribute> vals = item.getAttributes();
+            assertTrue(vals.size() == 7);
         }
     }
 
@@ -105,17 +105,15 @@ public class SimpleDBWriterTest {
     @Test
     public void emptyArgumentTest() {
         writer.writeRows(new ArrayList<SimpleDBRow>());
-        verifyZeroInteractions(dom);
+        verifyZeroInteractions(sdb);
     }
 
     /**
      * Verifies that we truncate long values
-     * 
-     * @throws SDBException
      */
     @SuppressWarnings("unchecked")
     @Test
-    public void longAttributesAreTruncatedTest() throws SDBException {
+    public void longAttributesAreTruncatedTest() {
         Charset utf8 = Charset.forName("UTF-8");
         boolean checked = false;
         String longMsg = "";
@@ -126,10 +124,10 @@ public class SimpleDBWriterTest {
         }
         SimpleDBRow row1 = new SimpleDBRow(longMsg, "i-001", "com.kikini.test", "logger", "level", 1000000000000L, 1, ImmutableMap.of("key", "value"));
         writer.writeRows(Collections.singletonList(row1));
-        verify(dom).batchPutAttributes(argument.capture());
-        Collection<List<ItemAttribute>> vals = argument.getValue().values();
-        for (List<ItemAttribute> val : vals) {
-            for (ItemAttribute att : val) {
+        verify(sdb).batchPutAttributes(argument.capture());
+        List<ReplaceableItem> items = argument.getValue().getItems();
+        for (ReplaceableItem item : items) {
+            for (ReplaceableAttribute att : item.getAttributes()) {
                 assertTrue(att.getName().getBytes(utf8).length <= 1024);
                 assertTrue(att.getValue().getBytes(utf8).length <= 1024);
                 checked = true;
@@ -140,23 +138,21 @@ public class SimpleDBWriterTest {
 
     /**
      * Verifies we put at most 25 attributes at a time
-     * 
-     * @throws SDBException
      */
     @SuppressWarnings("unchecked")
     @Test
-    public void putsAreBatchedTest() throws SDBException {
+    public void putsAreBatchedTest() {
         List<SimpleDBRow> tooManyRows = new ArrayList<SimpleDBRow>();
         for (int i = 0; i < 30; i++) {
             tooManyRows.add(new SimpleDBRow("test msg " + i, "i-001", "com.kikini.test", "logger", "level", 1000000000000L, 1,  ImmutableMap.of("key", "value")));
         }
         writer.writeRows(tooManyRows);
-        verify(dom, times(2)).batchPutAttributes(argument.capture());
-        List<Map> captured = argument.getAllValues();
+        verify(sdb, times(2)).batchPutAttributes(argument.capture());
+        List<BatchPutAttributesRequest> captured = argument.getAllValues();
         assertTrue(captured.size() == 2);
-        Collection<List<ItemAttribute>> vals1 = captured.get(0).values();
-        assertTrue(vals1.size() == 25);
-        Collection<List<ItemAttribute>> vals2 = captured.get(1).values();
-        assertTrue(vals2.size() == 5);
+        List<ReplaceableItem> items1 = captured.get(0).getItems();
+        assertTrue(items1.size() == 25);
+        List<ReplaceableItem> items2 = captured.get(1).getItems();
+        assertTrue(items2.size() == 5);
     }
 }

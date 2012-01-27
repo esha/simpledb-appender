@@ -22,7 +22,6 @@ import static org.mockito.Mockito.verify;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -30,10 +29,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.google.common.collect.ImmutableMap;
+import com.amazonaws.services.simpledb.AmazonSimpleDB;
+import com.amazonaws.services.simpledb.model.BatchPutAttributesRequest;
+import com.amazonaws.services.simpledb.model.ReplaceableAttribute;
+import com.amazonaws.services.simpledb.model.ReplaceableItem;
 
-import com.xerox.amazonws.sdb.Domain;
-import com.xerox.amazonws.sdb.ItemAttribute;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Tests of the {@link SimpleDBWriter} class related to time zones
@@ -42,10 +43,11 @@ import com.xerox.amazonws.sdb.ItemAttribute;
  */
 public class SimpleDBWriter_timeZoneTest {
 
-    private Domain domain = mock(Domain.class);
-    private SimpleDBWriter writer = new SimpleDBWriter(domain);
+    private AmazonSimpleDB sdb = mock(AmazonSimpleDB.class);
+    private String domain = "test";
+    private SimpleDBWriter writer = new SimpleDBWriter(sdb, domain);
     @SuppressWarnings("unchecked")
-    private ArgumentCaptor<Map> argument = ArgumentCaptor.forClass(Map.class);
+    private ArgumentCaptor<BatchPutAttributesRequest> argument = ArgumentCaptor.forClass(BatchPutAttributesRequest.class);
     private DateTime now = new DateTime(2010, 2, 1, 12, 0, 0, 0, DateTimeZone.UTC);
     private SimpleDBRow row = new SimpleDBRow("test", null, null, "logger", "level", now.getMillis(), 1,  ImmutableMap.of("key", "value"));
 
@@ -54,11 +56,10 @@ public class SimpleDBWriter_timeZoneTest {
         writer.setTimeZone(DateTimeZone.UTC);
     }
 
-    private String getTimeValueFromSingleRow(Map<String, List<ItemAttribute>> rows) {
-        Collection<List<ItemAttribute>> vals = rows.values();
-        assertEquals(1, vals.size());
-        List<ItemAttribute> columns = vals.iterator().next();
-        for (ItemAttribute col : columns) {
+    private String getTimeValueFromSingleRow(List<ReplaceableItem> rows) {
+        assertEquals(1, rows.size());
+        List<ReplaceableAttribute> columns = rows.iterator().next().getAttributes();
+        for (ReplaceableAttribute col : columns) {
             if ("time".equals(col.getName())) {
                 return col.getValue();
             }
@@ -70,8 +71,8 @@ public class SimpleDBWriter_timeZoneTest {
     @Test
     public void timeZoneUTC() throws Exception {
         writer.writeRows(Collections.singletonList(row));
-        verify(domain).batchPutAttributes(argument.capture());
-        assertEquals("2010-02-01T12:00:00.000Z", getTimeValueFromSingleRow(argument.getValue()));
+        verify(sdb).batchPutAttributes(argument.capture());
+        assertEquals("2010-02-01T12:00:00.000Z", getTimeValueFromSingleRow(argument.getValue().getItems()));
     }
 
     @SuppressWarnings("unchecked")
@@ -79,8 +80,8 @@ public class SimpleDBWriter_timeZoneTest {
     public void changeTimeZone() throws Exception {
         writer.setTimeZone(DateTimeZone.forID("America/Los_Angeles"));
         writer.writeRows(Collections.singletonList(row));
-        verify(domain).batchPutAttributes(argument.capture());
-        assertEquals("2010-02-01T04:00:00.000-08:00", getTimeValueFromSingleRow(argument.getValue()));
+        verify(sdb).batchPutAttributes(argument.capture());
+        assertEquals("2010-02-01T04:00:00.000-08:00", getTimeValueFromSingleRow(argument.getValue().getItems()));
     }
 
 }
