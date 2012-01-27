@@ -19,7 +19,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
@@ -27,7 +26,6 @@ import java.util.concurrent.DelayQueue;
 
 import org.joda.time.DateTimeZone;
 
-import ch.qos.logback.classic.spi.CallerData;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
@@ -60,7 +58,7 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
     private BlockingQueue<SimpleDBRow> queue = null;
 
     // optional properties
-    private String componentName = null;
+    private String contextName = null;
     private String host = null;
     private long loggingPeriodMillis = 10000;
     private String timeZone = null;
@@ -108,13 +106,12 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
     }
 
     /**
-     * Sets the name of the component. If none is specified, the Java class of
-     * the caller is used.
+     * Sets the name of the context.
      * 
-     * @param componentName
+     * @param contextName
      */
-    public void setComponentName(String componentName) {
-        this.componentName = componentName;
+    public void setContextName(String contextName) {
+        this.contextName = contextName;
     }
 
     /**
@@ -267,26 +264,13 @@ public class SimpleDBAppender extends AppenderBase<LoggingEvent> {
         super.start();
     }
 
-    private void queueForProcessing(String msg, String component, String level, long time) {
-        SimpleDBRow row = new SimpleDBRow(msg, host, component, level, time, loggingPeriodMillis);
+    private void queueForProcessing(String msg, String context, String level, long time) {
+        SimpleDBRow row = new SimpleDBRow(msg, host, context, level, time, loggingPeriodMillis);
         queue.add(row);
     }
 
     @Override
     public void append(LoggingEvent event) {
-        String component = componentName;
-
-        // Use component name specified in the configuration, or use the class
-        // name
-        if (component == null) {
-            // TODO: why is CallerData an array? Should we be calling this at
-            // this time?
-            List<CallerData> data = Arrays.asList(event.getCallerData());
-            if (!data.isEmpty()) {
-                component = data.get(0).getClassName();
-            }
-        }
-
-        queueForProcessing(event.getFormattedMessage(), component, event.getLevel().toString(), event.getTimeStamp());
+        queueForProcessing(event.getFormattedMessage(), contextName, event.getLevel().toString(), event.getTimeStamp());
     }
 }

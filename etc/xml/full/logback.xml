@@ -6,7 +6,7 @@
     <timeZone>UTC</timeZone>
     <loggingPeriodMillis>5000</loggingPeriodMillis>
     <host>localhost</host>
-    <componentName>my_component</componentName>
+    <contextName>my_context</contextName>
   </appender>
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <layout class="ch.qos.logback.classic.PatternLayout">

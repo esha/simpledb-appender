@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.spi.CallerData;
 import ch.qos.logback.classic.spi.LoggingEvent;
 
 import com.xerox.amazonws.sdb.Domain;
@@ -72,7 +71,6 @@ public class SimpleDBAppenderTest {
         argument = ArgumentCaptor.forClass(SimpleDBRow.class);
         when(event.getLevel()).thenReturn(level);
         when(event.getFormattedMessage()).thenReturn("this is a log message");
-        when(event.getCallerData()).thenReturn(new CallerData[] {});
         when(event.getTimeStamp()).thenReturn(1500000000000L);
     }
 
@@ -109,28 +107,27 @@ public class SimpleDBAppenderTest {
     }
 
     /**
-     * Test that the component is null since we gave empty CallerData
+     * Test that the context is null since we did not provide it
      */
     @Test
-    public void rowNullComponent() {
+    public void rowNullContext() {
         appender.append(event);
         verify(queue).add(argument.capture());
         SimpleDBRow row = argument.getValue();
-        assertNull(row.getComponent());
+        assertNull(row.getContext());
     }
 
     /**
-     * Test that the component is set correctly when we provide valid CallerData
+     * Test that the context is set correctly when we provide it
      */
     @Test
-    public void rowNonNullComponent() {
-        CallerData data = mock(CallerData.class);
-        when(data.getClassName()).thenReturn("com.kikini.test");
-        when(event.getCallerData()).thenReturn(new CallerData[] { data });
+    public void rowNonNullContext() {
+        appender.setContextName("com.kikini.test");
         appender.append(event);
         verify(queue).add(argument.capture());
         SimpleDBRow row = argument.getValue();
-        assertTrue(row.getComponent().equals("com.kikini.test"));
+        assertTrue(row.getContext().equals("com.kikini.test"));
+        appender.setContextName(null);
     }
 
     /**

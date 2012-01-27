@@ -49,7 +49,7 @@ class SimpleDBWriter {
     private static final int MAX_BATCH_PUT = 25;
 
     private static final String HOST_COLUMN = "host";
-    private static final String COMPONENT_COLUMN = "component";
+    private static final String CONTEXT_COLUMN = "context";
     private static final String TIME_COLUMN = "time";
     private static final String MESSAGE_COLUMN = "msg";
     private static final String LEVEL_COLUMN = "level";
@@ -128,7 +128,7 @@ class SimpleDBWriter {
                 addIfNotNull(atts, HOST_COLUMN, row.getHost());
                 addIfNotNull(atts, MESSAGE_COLUMN, row.getMsg());
                 addIfNotNull(atts, LEVEL_COLUMN, row.getLevel());
-                addIfNotNull(atts, COMPONENT_COLUMN, row.getComponent());
+                addIfNotNull(atts, CONTEXT_COLUMN, row.getContext());
                 addIfNotNull(atts, TIME_COLUMN, formatTime(row.getTime()));
 
                 // SimpleDB will not generate a key for you, so we use a random
