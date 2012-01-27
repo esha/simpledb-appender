@@ -5,7 +5,7 @@
 
   <name>Logback Appender</name>
   <description>Logback Appender for SimpleDB</description>
-  <groupId>com.kikini</groupId>
+  <groupId>com.esha</groupId>
   <artifactId>simpledb-appender</artifactId>
   <packaging>jar</packaging>
   <version>0.8</version>
