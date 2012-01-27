@@ -6,8 +6,10 @@
     <artifactId>simpledb-appender</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>Logback Appender</name>
-    <description>Logback Appender for SimpleDB</description>
+    <name>Logback SimpleDB Appender</name>
+    <url>https://github.com/esha/simpledb-appender</url>
+    <description>Logback Appender for Amazon SimpleDB</description>
+    <inceptionYear>2012</inceptionYear>
 
     <properties>
         <slf4j.version>1.6.4</slf4j.version>
@@ -20,6 +22,12 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <scm>
+        <connection>scm:git:git://github.com/esha/simpledb-appender.git</connection>
+        <developerConnection>scm:git:git@github.com:esha/simpledb-appender.git</developerConnection>
+        <url>https://github.com/esha/simpledb-appender</url>
+    </scm>
 
     <build>
         <plugins>
